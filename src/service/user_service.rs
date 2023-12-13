@@ -1,3 +1,4 @@
+use bcrypt::{DEFAULT_COST, hash};
 use chrono::Local;
 use crate::{repository::{pg_user_repo::PgUserRepository, user_repo::UserRepostory}, dto::{user_request_dto::UserRequestDto, user_response_dto::UserResponseDto}, model::user::User};
 use crate::custom_error::service_error::ServiceError;
@@ -31,7 +32,8 @@ impl UserService {
             .find_by_email(dto.email.clone())
             .map_or_else(|| {
                 // If user with given email is not exist then create user
-                let user = User::from(&dto);
+                let mut user = User::from(&dto);
+                user.password = hash(&user.password, DEFAULT_COST).unwrap_or(user.password);
 
                 Ok(self.repo.save(user))
             }, |user| {
@@ -69,19 +71,8 @@ impl UserService {
                             .set_verified_by_id(user, local_now)
                             .map(|u| UserResponseDto::from(&u))
                     )
-                    // match user.email_verified_at {
-                    //     Some(_) => Err(ServiceError{
-                    //         message: format!("User with given id [{}] is already being verified", user_id),
-                    //         success: true,
-                    //         status: 200
-                    //     }),
-                    //     None => {
-                    //
-                    //     }
-                    // }
                 }
             )
-
     }
 
     pub fn delete_by_id(&self, user_id: String) -> Option<UserResponseDto> {

@@ -14,7 +14,8 @@ Actually this project is my journey to learn Rust and i'm trying to make an REST
 
 - Basic Structure (Inspired by: [kliarist/animals](https://github.com/kliarist/animals)) ✅
 - Service and Repository Pattern ✅
-- Completing User API
+- Completing User API ✅
+- Implement Bcrypt ✅
 - Auth API & Auth Middleware
 - PASETO Token
 - Redis Implementation
@@ -23,3 +24,6 @@ Actually this project is my journey to learn Rust and i'm trying to make an REST
 - Order API
 - Mail Notification
 - Soon... will be added again LOL
+
+## Postman Doc
+[Check Postman Doc Here](https://documenter.getpostman.com/view/26226009/2s9YkjB3cq)

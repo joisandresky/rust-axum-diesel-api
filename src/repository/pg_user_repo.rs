@@ -4,7 +4,7 @@ use diesel::r2d2::{Pool, ConnectionManager};
 
 use crate::repository::user_repo::UserRepostory;
 use crate::model::user::User;
-use crate::schemas::schema::users::{email, email_verified_at, id, table};
+use crate::schemas::schema::users::{email, email_verified_at, id, table, updated_at};
 use crate::schemas::schema::users::dsl::users;
 
 #[derive(Clone)]
@@ -60,7 +60,10 @@ impl UserRepostory for PgUserRepository {
         let db_conn = &mut self.db_pool.get().unwrap();
 
         diesel::update(&user)
-            .set(email_verified_at.eq(Some(verified_time)))
+            .set((
+                email_verified_at.eq(Some(&verified_time)),
+                updated_at.eq(Some(verified_time)),
+            ))
             .get_result(db_conn)
             .ok()
     }
