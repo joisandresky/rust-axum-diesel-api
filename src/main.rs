@@ -1,9 +1,9 @@
+use std::error::Error;
 use std::sync::Arc;
 
 use axum::{
     routing::get, Router,
 };
-use axum::routing::patch;
 use envconfig::Envconfig;
 use tokio::{net::TcpListener, sync::Mutex};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -25,10 +25,10 @@ mod service;
 mod handler;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
 
-    let app_cfg = AppConfig::init_from_env().unwrap();
+    let app_cfg = AppConfig::init_from_env()?;
     
     tracing_subscriber::registry()
         .with(
@@ -40,32 +40,47 @@ async fn main() {
 
     let db_pool = establish_connection(app_cfg.database_url().to_string());
     tracing::info!("database connection established at \"{}\"", app_cfg.database_url());
-    run_pending_migrations(db_pool.get().unwrap());
+    run_pending_migrations(db_pool.get()?);
     tracing::info!("Database migration run...");
 
+    let redis_client = redis::Client::open(app_cfg.redis_url())?;
+
     // initialize state
-    let app_state = Arc::new(Mutex::new(AppState::new(db_pool)));
+    let app_state = Arc::new(Mutex::new(AppState::new(db_pool, redis_client)?));
 
-    let user_routes = Router::new()
-        .route("/api/v1/users/set-verified/:id", patch(user_handler::set_verified_by_id))
-        .route("/api/v1/users/:id", get(user_handler::find_by_id).delete(user_handler::delete_by_id))
-        .route("/api/v1/users", get(user_handler::find_all).post(user_handler::create)
-    );
+    // let user_routes = Router::new()
+    //     .route("/api/v1/users/set-verified/:id", patch(user_handler::set_verified_by_id))
+    //     .route("/api/v1/users/:id", get(user_handler::find_by_id).delete(user_handler::delete_by_id))
+    //     .route("/api/v1/users", get(user_handler::find_all).post(user_handler::create)
+    // );
 
-    let app = Router::new()
-        .merge(user_routes)
-        .route("/", get(root))
+    let app = routes()
         .with_state(app_state);
 
     let server_addr = format!("0.0.0.0:{}", app_cfg.app_port());
-    let listener = TcpListener::bind(&server_addr).await.unwrap();
+    let listener = TcpListener::bind(&server_addr).await?;
     
     tracing::debug!("listening on {}", server_addr);
-    axum::serve(listener, app.into_make_service()).await.unwrap();
+    axum::serve(listener, app.into_make_service()).await?;
+
+    Ok(())
 }
 
 async fn root() -> &'static str {
     tracing::info!("hey you got it here");
 
-    "home woyy"
+    "Welcome to THE API 😂"
 }
+
+fn routes() -> Router<Arc<Mutex<AppState>>> {
+    Router::new()
+        .merge(user_handler::routes())
+        .route("/", get(root))
+}
+
+// fn routes_user() -> Router<Arc<Mutex<AppState>>> {
+//     Router::new()
+//         .route("/api/v1/users/set-verified/:id", patch(user_handler::set_verified_by_id))
+//         .route("/api/v1/users/:id", get(user_handler::find_by_id).delete(user_handler::delete_by_id))
+//         .route("/api/v1/users", get(user_handler::find_all).post(user_handler::create))
+// }

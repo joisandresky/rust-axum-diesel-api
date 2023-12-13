@@ -1,14 +1,22 @@
 use std::sync::Arc;
 
-use axum::{extract::State, Json, http::StatusCode};
+use axum::{extract::State, Json, http::StatusCode, Router};
 use axum::extract::Path;
+use axum::routing::{get, patch};
 use serde_json::{json, Value};
 use tokio::sync::Mutex;
 use validator::Validate;
 
 use crate::{config::app_state::AppState, dto::user_request_dto::UserRequestDto};
 
-pub async fn find_all(
+pub fn routes() -> Router<Arc<Mutex<AppState>>> {
+    Router::new()
+        .route("/api/v1/users/set-verified/:id", patch(set_verified_by_id))
+        .route("/api/v1/users/:id", get(find_by_id).delete(delete_by_id))
+        .route("/api/v1/users", get(find_all).post(create))
+}
+
+async fn find_all(
     State(app_state): State<Arc<Mutex<AppState>>>,
 ) -> (StatusCode, Json<Value>) {
     tracing::info!("Requesting to get all users.");
@@ -24,7 +32,7 @@ pub async fn find_all(
     )
 }
 
-pub async fn find_by_id(
+async fn find_by_id(
     State(app_state): State<Arc<Mutex<AppState>>>,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<Value>) {
@@ -55,7 +63,7 @@ pub async fn find_by_id(
         )
 }
 
-pub async fn create(
+async fn create(
     app_state: State<Arc<Mutex<AppState>>>,
     Json(dto): Json<UserRequestDto>,
 ) -> (StatusCode, Json<Value>) {
@@ -96,7 +104,7 @@ pub async fn create(
     }
 }
 
-pub async fn set_verified_by_id(
+async fn set_verified_by_id(
     State(app_astate): State<Arc<Mutex<AppState>>>,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<Value>) {
@@ -123,7 +131,7 @@ pub async fn set_verified_by_id(
         })
 }
 
-pub async fn delete_by_id(
+async fn delete_by_id(
     State(app_state): State<Arc<Mutex<AppState>>>,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<Value>) {

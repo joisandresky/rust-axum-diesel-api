@@ -1,16 +1,18 @@
 use bcrypt::{DEFAULT_COST, hash};
 use chrono::Local;
+use redis::Commands;
 use crate::{repository::{pg_user_repo::PgUserRepository, user_repo::UserRepostory}, dto::{user_request_dto::UserRequestDto, user_response_dto::UserResponseDto}, model::user::User};
 use crate::custom_error::service_error::ServiceError;
 
 
 pub struct UserService {
     repo: PgUserRepository,
+    redis_conn: redis::Connection,
 }
 
 impl UserService {
-    pub fn new(repo: PgUserRepository) -> Self {
-        Self { repo }
+    pub fn new(repo: PgUserRepository, redis_conn: redis::Connection) -> Self {
+        Self { repo, redis_conn }
     }
 
     pub fn find_all(&self) -> Vec<UserResponseDto> {
@@ -46,7 +48,7 @@ impl UserService {
             })
     }
 
-    pub fn set_verified(&self, user_id: String) -> Result<Option<UserResponseDto>, ServiceError> {
+    pub fn set_verified(&mut self, user_id: String) -> Result<Option<UserResponseDto>, ServiceError> {
         self.repo
             .find_by_id(user_id.clone())
             .map_or_else(|| {
@@ -66,6 +68,15 @@ impl UserService {
                     }
 
                     let local_now = Local::now().naive_local();
+                    let redis_key = format!("USER_VERIFIED_{}", &user_id);
+
+                    let _: () = self.redis_conn
+                        .set(&redis_key, "OK")
+                        .unwrap();
+                    let _: () = self.redis_conn
+                        .expire(&redis_key, 20)
+                        .unwrap();
+
                     Ok(
                         self.repo
                             .set_verified_by_id(user, local_now)

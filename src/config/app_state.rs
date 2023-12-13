@@ -1,4 +1,4 @@
-
+use std::error::Error;
 use diesel::{r2d2::ConnectionManager, PgConnection};
 use r2d2::Pool;
 
@@ -10,11 +10,13 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(db_pool: Pool<ConnectionManager<PgConnection>>) -> Self {
+    pub fn new(db_pool: Pool<ConnectionManager<PgConnection>>, redis_client: redis::Client) -> Result<Self, Box<dyn Error>> {
+        let redis_conn = redis_client.get_connection()?;
+
         let user_repo = PgUserRepository::new(db_pool);
 
-        Self {
-            user_service: UserService::new(user_repo),
-        }
+        Ok(Self {
+            user_service: UserService::new(user_repo, redis_conn),
+        })
     }
 }

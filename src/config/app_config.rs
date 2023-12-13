@@ -8,6 +8,9 @@ pub struct AppConfig {
     #[envconfig(from = "DATABASE_URL")]
     database_url: String,
 
+    #[envconfig(from = "REDIS_URL")]
+    redis_url: String,
+
     // #[envconfig(from = "RUST_LOG", default = "info")]
     // log_level: String,
 }
@@ -20,4 +23,6 @@ impl AppConfig {
     pub fn database_url(&self) -> &str {
         &self.database_url
     }
+
+    pub fn redis_url(&self) -> &str { &self.redis_url }
 }
