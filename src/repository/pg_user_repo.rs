@@ -1,9 +1,10 @@
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::r2d2::{Pool, ConnectionManager};
 
 use crate::repository::user_repo::UserRepostory;
 use crate::model::user::User;
-use crate::schemas::schema::users::{id, table};
+use crate::schemas::schema::users::{email, email_verified_at, id, table};
 use crate::schemas::schema::users::dsl::users;
 
 #[derive(Clone)]
@@ -32,6 +33,15 @@ impl UserRepostory for PgUserRepository {
             .ok()
     }
 
+    fn find_by_email(&self, user_email: String) -> Option<User> {
+        let db_conn = &mut self.db_pool.get().unwrap();
+
+        users
+            .filter(email.eq(user_email))
+            .first::<User>(db_conn)
+            .ok()
+    }
+
     fn save(&self, user: User) -> String {
         let db_conn = &mut self.db_pool.get().unwrap();
         
@@ -44,5 +54,27 @@ impl UserRepostory for PgUserRepository {
             .expect("Error Saving new User");
 
         new_user.id
+    }
+
+    fn set_verified_by_id(&self, user: User, verified_time: NaiveDateTime) -> Option<User> {
+        let db_conn = &mut self.db_pool.get().unwrap();
+
+        diesel::update(&user)
+            .set(email_verified_at.eq(Some(verified_time)))
+            .get_result(db_conn)
+            .ok()
+    }
+
+    fn delete_by_id(&self, user_id: String) -> Option<User> {
+        let db_conn = &mut self.db_pool.get().unwrap();
+
+        let user = users
+            .filter(id.eq(&user_id))
+            .first::<User>(db_conn)
+            .ok();
+
+        let _ = diesel::delete(users.filter(id.eq(user_id))).execute(db_conn);
+
+        user
     }
 }

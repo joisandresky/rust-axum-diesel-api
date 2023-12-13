@@ -3,6 +3,7 @@ use std::sync::Arc;
 use axum::{
     routing::get, Router,
 };
+use axum::routing::patch;
 use envconfig::Envconfig;
 use tokio::{net::TcpListener, sync::Mutex};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -16,6 +17,7 @@ mod config;
 mod db_util;
 mod schemas;
 mod model;
+mod custom_error;
 mod dto;
 mod mapper;
 mod repository;
@@ -45,7 +47,8 @@ async fn main() {
     let app_state = Arc::new(Mutex::new(AppState::new(db_pool)));
 
     let user_routes = Router::new()
-        .route("/api/v1/users/:id", get(user_handler::find_by_id))
+        .route("/api/v1/users/set-verified/:id", patch(user_handler::set_verified_by_id))
+        .route("/api/v1/users/:id", get(user_handler::find_by_id).delete(user_handler::delete_by_id))
         .route("/api/v1/users", get(user_handler::find_all).post(user_handler::create)
     );
 
