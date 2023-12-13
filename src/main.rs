@@ -48,12 +48,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // initialize state
     let app_state = Arc::new(Mutex::new(AppState::new(db_pool, redis_client)?));
 
-    // let user_routes = Router::new()
-    //     .route("/api/v1/users/set-verified/:id", patch(user_handler::set_verified_by_id))
-    //     .route("/api/v1/users/:id", get(user_handler::find_by_id).delete(user_handler::delete_by_id))
-    //     .route("/api/v1/users", get(user_handler::find_all).post(user_handler::create)
-    // );
-
     let app = routes()
         .with_state(app_state);
 
@@ -77,10 +71,3 @@ fn routes() -> Router<Arc<Mutex<AppState>>> {
         .merge(user_handler::routes())
         .route("/", get(root))
 }
-
-// fn routes_user() -> Router<Arc<Mutex<AppState>>> {
-//     Router::new()
-//         .route("/api/v1/users/set-verified/:id", patch(user_handler::set_verified_by_id))
-//         .route("/api/v1/users/:id", get(user_handler::find_by_id).delete(user_handler::delete_by_id))
-//         .route("/api/v1/users", get(user_handler::find_all).post(user_handler::create))
-// }

@@ -9,6 +9,7 @@ Actually this project is my journey to learn Rust and i'm trying to make an REST
 - Axum
 - Postgres
 - Diesel ORM
+- Redis
 
 ## TODO!
 
@@ -18,7 +19,8 @@ Actually this project is my journey to learn Rust and i'm trying to make an REST
 - Implement Bcrypt ✅
 - Auth API & Auth Middleware
 - PASETO Token
-- Redis Implementation
+- Redis Implementation ✅
+- Redis Async with Tokio
 - Merchant API
 - Product API
 - Order API
